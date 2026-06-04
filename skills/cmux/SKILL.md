@@ -94,7 +94,3 @@ cmux settings path
 ```
 
 Back up the user `cmux.json`, edit cmux-owned settings there, then reload with `cmux reload-config`. Terminal rendering belongs to Ghostty config, not cmux settings.
-
-## Agent Use
-
-Work in the caller workspace by default. Avoid `select-workspace`, `focus-pane`, `focus-panel`, or focus-changing tab actions unless the user asks for visible focus changes. Prefer `--focus false` when creating or moving panes or surfaces for background work.
