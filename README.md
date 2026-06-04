@@ -7,6 +7,7 @@ Start narrow. Add only things that are useful across projects and worth maintain
 ## Contents
 
 - `skills/cmux`: Use cmux topology, terminal surfaces, and browser automation.
+- `skills/parallel-development`: Manage fixed-slot parallel app development.
 - `skills/prompt-intent`: Write and review minimal agent prompts.
 
 ## Install
