@@ -6,6 +6,7 @@ Start narrow. Add only things that are useful across projects and worth maintain
 
 ## Contents
 
+- `skills/cmux`: Manage cmux workspaces, browser panels, and visible processes.
 - `skills/prompt-intent`: Write and review minimal agent prompts.
 
 ## Install
