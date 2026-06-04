@@ -1,49 +1,100 @@
 ---
 name: cmux
-description: Manage cmux workspaces, panes, surfaces, browser panels, task titles, and long-running visible processes. Use when running inside cmux or when a user asks to use cmux, manage app/test/log processes in cmux, open or inspect browser panels, organize workspace surfaces, recover cmux state, or keep development work visible outside the chat terminal.
+description: Use cmux's CLI to inspect and control windows, workspaces, panes, terminal surfaces, browser surfaces, focus, layout, settings, and browser automation. Use when a task mentions cmux, cmux browser panels, cmux workspaces, panes, surfaces, routing commands through cmux, reading or sending terminal input, opening URLs or files in cmux, or changing cmux-owned settings.
 ---
 
 # cmux
 
-Use cmux as the visible workspace when it is available. Keep chat for agent interaction. Put app servers, test watchers, logs, and browser checks in named cmux surfaces.
+cmux is controlled through the `cmux` CLI.
 
-## First Check
+## Docs
 
-- If `cmux` is available, run `cmux identify --json` to learn the current workspace, window, pane, and surface.
-- Set a short task title early. Prefer a project helper when one exists; otherwise use `cmux rename-workspace "short task"` or `cmux rename-tab "short task"`.
-- Read repo instructions for cmux slots, ports, startup helpers, and browser conventions before starting services.
-- If `cmux` is unavailable, say so and fall back to the normal local tools.
-
-## Surfaces
-
-- Reuse a named surface when it fits the task.
-- Create separate surfaces for distinct jobs such as app server, tests, logs, browser, or scratch terminal.
-- Prefer project helpers for startup; they know ports, env files, and surface names.
-- If there is no helper, use cmux primitives:
+Use cmux's own docs when command details matter:
 
 ```bash
-cmux new-surface --type terminal --workspace <workspace>
-cmux rename-tab --surface <surface> "dev log"
-cmux send --surface <surface> "<command>"
-cmux send-key --surface <surface> Enter
+cmux --help
+cmux docs api
+cmux docs browser
+cmux docs settings
 ```
 
-- Check existing ports or health URLs before starting another server.
+## Model
 
-## Browser
+- Window: top-level macOS cmux window.
+- Workspace: sidebar/tab-like group inside a window.
+- Pane: split region inside a workspace.
+- Surface: terminal or browser tab inside a pane.
+- Handle: `window:N`, `workspace:N`, `pane:N`, or `surface:N`. UUIDs also work; request UUID output only when needed.
 
-- Open or reuse a browser surface with `cmux browser open <url>` or `cmux browser goto <url>`.
-- Keep browser state in the same workspace as the process it is testing.
-- Verify frontend changes with focused browser actions such as `snapshot`, `screenshot`, `wait`, `click`, `fill`, `press`, `console list`, and `errors list`.
-- Use the Browser plugin when it is available and better suited to the inspection.
+## Identify
 
-## Process Hygiene
+Prefer caller context over visual focus:
 
-- Avoid long-lived processes in the chat terminal.
-- Name surfaces by task or function.
-- Tell the user which useful surfaces, URLs, or processes remain running.
-- Reuse or stop conflicting processes before starting duplicates.
+```bash
+cmux identify --json
+cmux tree --all
+cmux list-windows
+cmux list-workspaces
+cmux list-panes --workspace workspace:2
+cmux list-pane-surfaces --workspace workspace:2 --pane pane:1
+```
 
-## Recovery
+cmux terminals set `CMUX_WORKSPACE_ID`, `CMUX_SURFACE_ID`, and `CMUX_SOCKET_PATH`. Use those or refs from `identify`/`tree` as explicit `--workspace`, `--surface`, and `--window` targets for mutating commands.
 
-If cmux commands fail because the socket or app is unavailable, avoid repeated retries. Check availability, use the project helper's recovery command when present, or ask the user to reopen cmux.
+## Layout
+
+```bash
+cmux new-workspace --name "name" --cwd "$PWD"
+cmux new-pane --workspace workspace:2 --type terminal --direction right --focus false
+cmux new-pane --workspace workspace:2 --type browser --direction right --url "https://example.com" --focus false
+cmux new-surface --workspace workspace:2 --pane pane:1 --type terminal --focus false
+cmux new-surface --workspace workspace:2 --pane pane:1 --type browser --url "https://example.com" --focus false
+cmux move-surface --surface surface:7 --pane pane:2 --focus false
+cmux reorder-surface --surface surface:7 --before surface:3
+cmux close-surface --surface surface:7
+```
+
+`rename-workspace` names a workspace. `rename-tab` names a surface tab inside a pane.
+
+## Terminal Surfaces
+
+```bash
+cmux read-screen --workspace workspace:2 --surface surface:7 --scrollback --lines 100
+cmux send --workspace workspace:2 --surface surface:7 "npm test"
+cmux send-key --workspace workspace:2 --surface surface:7 Enter
+cmux surface-health --workspace workspace:2
+cmux top --workspace workspace:2 --processes
+```
+
+## Browser Surfaces
+
+Open or target one browser surface, verify navigation, snapshot, act, wait, then snapshot again.
+
+```bash
+cmux --json browser open "https://example.com"
+cmux browser surface:7 get url
+cmux browser surface:7 wait --load-state complete --timeout-ms 15000
+cmux browser surface:7 snapshot --interactive
+cmux browser surface:7 fill e1 "hello"
+cmux browser surface:7 click e2 --snapshot-after
+cmux browser surface:7 screenshot --out /tmp/cmux.png
+cmux browser surface:7 console list
+cmux browser surface:7 errors list
+```
+
+If `snapshot --interactive` or `eval` fails, use `get url`, `get text body`, or `get html body` to inspect the page.
+
+## Settings
+
+Before changing cmux settings, run:
+
+```bash
+cmux docs settings
+cmux settings path
+```
+
+Back up the user `cmux.json`, edit cmux-owned settings there, then reload with `cmux reload-config`. Terminal rendering belongs to Ghostty config, not cmux settings.
+
+## Agent Use
+
+Work in the caller workspace by default. Avoid `select-workspace`, `focus-pane`, `focus-panel`, or focus-changing tab actions unless the user asks for visible focus changes. Prefer `--focus false` when creating or moving panes or surfaces for background work.
