@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Intent"
+  short_description: "Write and review minimal agent prompts"
+  default_prompt: "Use $prompt-intent to review this agent prompt for intent, context, and unnecessary rules."
